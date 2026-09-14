@@ -20,5 +20,22 @@ def create_student():
     STUDENTS.append(student)
     return jsonify(student), 201
 
+@app.route("/books/<book_id>", methods = ["GET"])
+def get_book(book_id):
+    book = find_by_id(book_id)
+    if book is None:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(book), 200
+
+@app.route("/items/<int:item_id>")
+def get_item(item_id):
+    return jsonify({"id":item_id}), 200
+
+@app.route("/books", methods = ["GET"])
+def list_books():
+    limit = int(request.args.get("limit", 20))
+    q = request.args.get("q","").strip().lower()
+    return jsonify({"item": item}), 200
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
