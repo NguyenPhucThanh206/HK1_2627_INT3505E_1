@@ -24,7 +24,9 @@ def init_db():
             CREATE TABLE IF NOT EXISTS books (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
-                author TEXT NOT NULL
+                author TEXT NOT NULL,
+                isbn TEXT,
+                price REAL
             )
         ''')
         db.commit()
@@ -64,14 +66,83 @@ def create_book():
     resp.headers["Location"] = f"/books/{book['id']}"
     return resp
 
-@app.get("/books/<int:id>")
-def get_book(id):
+@app.get("/books/<int:bid>")
+def fetch(bid):
     db = get_db()
-   
-    row = db.execute("SELECT * FROM books WHERE id = ?", (id,)).fetchone()
-    if not row:
-        return jsonify(error="Book not found"), 404
-    return jsonify(dict(row)), 200
+    row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone() #dau ',' dang sau bid, truy van sqlite yeu cau tham so phai la tuple
+
+    if row is None:
+        return jsonify(error="not found"), 404
+
+    resp = make_response(jsonify(dict(row)), 200)
+    resp.headers["Cache-Control"] = "max-age=60"
+    return resp
+
+@app.put("/books/<int:bid>")
+def put(bid):
+    db = get_db()
+
+    row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+    if row is None:
+        return jsonify(error="not found"), 404
+
+    p = request.get_json(silent=True) or {}
+    t, a = p.get("title"), p.get("author")
+
+    if not t or not a:
+        return jsonify(error="need title+author"), 422
+
+    isbn = p.get("isbn")
+    price = p.get("price")
+
+    db.execute(
+        "UPDATE books SET title = ?, author = ?, isbn = ?, price = ? WHERE id = ?", 
+        (t.strip(), a.strip(), p.get("isbn"), p.get("price"), bid)
+    )
+    db.commit()
+
+    update_row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+    return jsonify(dict(update_row)), 200
+
+@app.patch("/books/<int:bid>")
+def patch(bid):
+    db = get_db()
+    row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+    if row is None:
+        return jsonify(error="not found"), 404
+
+    p = request.get_json(silent=True) or {}
+
+    if "price" in p and ((p.get("price")) is None or p.get("price") < 0):
+        return jsonify(error="price must be positive"), 422
+
+    fields = []
+    params = []
+    for key in ["title", "author", "isbn", "price"]:
+        if key in p:
+            fields.append(f"{key} = ?")
+            params.append(p[key].strip() if isinstance(p[key], str) else p[key])
+
+    if fields:
+        query = f"UPDATE books SET {', '.join(fields)} WHERE id = ?"
+        params.append(bid)
+        db.execute(query, params)
+        db.commit()
+        
+    updated_row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+    return jsonify(dict(updated_row)), 200 
+
+@app.delete("/books/<int:bid>")
+def delete(bid):
+    db = get_db()
+    row = db.execute("SELECT * FROM books WHERE id = ?", (bid,)).fetchone()
+    if row is None:
+        return jsonify(error="not found"), 404
+        
+    db.execute("DELETE FROM books WHERE id = ?", (bid,))
+    db.commit()
+    
+    return "", 204
 
 if __name__ == "__main__":
     init_db() 
