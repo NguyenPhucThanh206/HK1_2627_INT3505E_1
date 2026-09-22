@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, request, make_response, g
 import sqlite3
+import hashlib
+import json
 
 app = Flask(__name__)
 DB_FILE = 'library.db'
@@ -125,7 +127,18 @@ def fetch(bid):
     if row is None:
         return jsonify(error="not found"), 404
 
+    book = dict(row)
+
+    book_string = json.dumps(book, sort_keys=True)
+    etag = hashlib.md5(book_string.encode("utf-8")).hexdigest()
+
+    if_none_match = request.headers.get("If-None-Match")
+
+    if if_none_match and if_none_match.strip('"') == etag:
+        return "", 304
+
     resp = make_response(jsonify(dict(row)), 200)
+    resp.headers["ETag"] = f'"{etag}"'
     resp.headers["Cache-Control"] = "max-age=60"
     return resp
 
