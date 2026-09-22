@@ -3,6 +3,7 @@ import sqlite3
 
 app = Flask(__name__)
 DB_FILE = 'library.db'
+DEFAULT_SIZE, MAX_SIZE = 20, 100
 
 def get_db():
     if 'db' not in g:
@@ -33,14 +34,64 @@ def init_db():
 
 @app.get("/books")
 def list_books():
+    try:
+        page = int(request.args.get("page", 1))
+        size = int(request.args.get("size", DEFAULT_SIZE))
+    except ValueError:
+        return jsonify(error="page and size must be int"), 400
+
+    page = max(page, 1)
+    size = max(min(size, MAX_SIZE), 1)
+
     db = get_db()
     rows = db.execute("SELECT * FROM books").fetchall()
-    books_list = [dict(r) for r in rows]
+    filt = [dict(r) for r in rows]
 
-    return jsonify({
-        "data": books_list,
-        "total": len(books_list)
-    }), 200
+    a = request.args.get("author")
+    if a:
+        filt = [b for b in filt if b.get("author") and b["author"].lower() == a.lower()]
+
+    q = request.args.get("q")
+    if q:
+        filt = [b for b in filt if b.get("title") and q.lower() in b["title"].lower()]
+
+    total = len(filt)
+    start = (page - 1) * size
+    end = start + size
+    items = filt[start:end]
+    total_pages = (total + size - 1) // size if total > 0 else 1
+
+    def u(p):
+        base = f"/books?page={p}&size={size}"
+        if a:
+            base += f"&author={a}"
+        if q:
+            base += f"&q={q}"
+        return base
+
+    # Gọi u(page) sau khi đã định nghĩa u(p)
+    links = {"self": u(page)}
+    if page > 1:
+        links["prev"] = u(page - 1)
+    if end < total:
+        links["next"] = u(page + 1)
+    links["first"] = u(1)
+    links["last"] = u(total_pages)
+
+    body = {
+        "data": items,
+        "pagination": {
+            "page": page,
+            "size": size,
+            "total": total,
+            "total_pages": total_pages,
+        },
+        "links": links,
+    }
+
+    resp = make_response(jsonify(body), 200)
+    resp.headers["Cache-Control"] = "public, max-age=30"
+    return resp
 
 @app.post("/books")
 def create_book():
