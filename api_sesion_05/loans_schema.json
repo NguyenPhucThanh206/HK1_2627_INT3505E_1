@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Loan",
+  "type": "object",
+  "properties": {
+    "id": { "type": "integer" },
+    "member_id": { "type": "integer" },
+    "borrow_date": { "type": "string", "format": "date" },
+    "due_date": { "type": "string", "format": "date" },
+    "status": { "type": "string", "enum": ["borrowed", "returned", "overdue"] }
+  },
+  "required": ["member_id", "borrow_date", "due_date", "status"]
+}

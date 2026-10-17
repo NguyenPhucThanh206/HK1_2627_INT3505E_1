@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Member",
+  "type": "object",
+  "properties": {
+    "id": { "type": "integer" },
+    "cccd": { "type": "string", "pattern": "^[0-9]{12}$" },
+    "name": { "type": "string" }
+  },
+  "required": ["cccd", "name"]
+}

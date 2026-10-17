@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Book",
+  "type": "object",
+  "properties": {
+    "id": { "type": "integer", "description": "ID sách" },
+    "name": { "type": "string" },
+    "price": { "type": "number", "minimum": 0 },
+    "available_copies": { "type": "integer", "minimum": 0 },
+    "author_id": { "type": "integer" },
+    "category_id": { "type": "integer" }
+  },
+  "required": ["name", "price", "available_copies"]
+}
