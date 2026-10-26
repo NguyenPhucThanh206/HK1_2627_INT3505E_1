@@ -1,0 +1,19 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    example: "123e4567-e89b-12d3-a456-426614174000"
+  author:
+    $ref: "./author.yaml"
+  content:
+    type: string
+    example: "Bài viết thử nghiệm trên Social Network API!"
+  visibility:
+    type: string
+    enum: [PUBLIC, FRIENDS, PRIVATE]
+    example: "PUBLIC"
+  createdAt:
+    type: string
+    format: date-time
+    example: "2026-10-26T08:00:00Z"

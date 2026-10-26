@@ -1,0 +1,14 @@
+type: object
+properties:
+  accessToken:
+    type: string
+    example: "mock-access-token-xyz"
+  refreshToken:
+    type: string
+    example: "mock-refresh-token-xyz"
+  tokenType:
+    type: string
+    example: "Bearer"
+  expiresIn:
+    type: integer
+    example: 3600

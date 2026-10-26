@@ -1,0 +1,15 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    example: "4fa85f64-5717-4562-b3fc-2c963f66afa6"
+  username:
+    type: string
+    example: "Nguyen_Van_A"
+  displayName:
+    type: string
+    example: "Nguyễn Văn A"
+  avatarUrl:
+    type: string
+    example: "https://cdn.socialnetwork.vn/avatars/Nguyen_Van_A.png"
