@@ -1,0 +1,38 @@
+openapi: 3.0.0
+info:
+  title: Student API (Design-First)
+  version: "1.0"
+paths:
+  /students:
+    get:
+      summary: Lấy danh sách học sinh
+      operationId: get_students
+      responses:
+        '200':
+          description: Lấy danh sách thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Student'
+  /students/{id}:
+    get:
+      summary: Lấy thông tin (tên) học sinh theo ID
+      operationId: get_student_by_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của học sinh cần lấy thông tin
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tìm thấy học sinh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '404':
+          description: Không tìm thấy học sinh

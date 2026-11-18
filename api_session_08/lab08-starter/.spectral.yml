@@ -1,0 +1,50 @@
+# Lab 2: spectral:oas (operationId, ...) + custom rule cho lỗi 2, lỗi 3 và rule "response 200 không rỗng".
+extends: ["spectral:oas"]
+
+rules:
+  # Custom rule yêu cầu của đề: response 200 phải có schema không rỗng.
+  # Object -> có >= 1 property; array -> items là object có >= 1 property.
+  response-200-must-have-properties:
+    description: Response 200 phải khai báo ít nhất 1 trường (object) hoặc items có trường (array).
+    message: "Response 200 có schema rỗng, client không biết shape ({{path}})."
+    severity: error
+    given: "$.paths[*][*].responses['200'].content['application/json'].schema"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          anyOf:
+            - type: object
+              required: [properties]
+              properties:
+                properties: {type: object, minProperties: 1}
+            - type: object
+              required: [type, items]
+              properties:
+                type: {const: array}
+                items:
+                  type: object
+                  required: [properties]
+                  properties:
+                    properties: {type: object, minProperties: 1}
+
+  # Lỗi 2: 204 No Content không được có content.
+  no-body-on-204:
+    description: Response 204 không được khai báo content.
+    message: "204 No Content không được khai báo body ({{path}})."
+    severity: error
+    given: "$.paths[*][*].responses['204']"
+    then:
+      field: content
+      function: falsy
+
+  # Lỗi 3: year phải là integer.
+  year-must-be-integer:
+    description: Trường year phải có type integer.
+    message: "year phải là integer, hiện tại là '{{value}}'."
+    severity: error
+    given: "$.components.schemas.*.properties.year.type"
+    then:
+      function: enumeration
+      functionOptions:
+        values: [integer]

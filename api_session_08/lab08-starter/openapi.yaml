@@ -1,0 +1,178 @@
+openapi: 3.0.3
+info:
+  title: Books API — Lab 08
+  version: 1.0.0
+  description: |
+    Educational API. LAB 2: the three intentional contract defects have been fixed.
+    The application is the reference for intended behavior.
+  contact:
+    name: Lab 08 Student
+    email: student@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+tags:
+  - name: system
+    description: Service health.
+  - name: books
+    description: Books CRUD operations.
+paths:
+  /health:
+    get:
+      tags: [system]
+      operationId: healthCheck
+      summary: Health check
+      description: Returns ok when the service is ready.
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string}
+  /books:
+    get:
+      tags: [books]
+      operationId: listBooks            # FIX 1: operationId added
+      summary: List books
+      description: Lists books (20 per page), optionally filtered by author or year.
+      parameters:
+        - in: query
+          name: author
+          schema: {type: string}
+        - in: query
+          name: year
+          schema: {type: integer}
+        - in: query
+          name: page
+          schema: {type: integer, minimum: 1}
+      responses:
+        '200':
+          description: List books
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Book'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+    post:
+      tags: [books]
+      operationId: createBook
+      summary: Create a book
+      description: Creates a book; title and author are required, ISBN must be unique.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BookInput'}
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Book'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /books/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: {type: integer, minimum: 1}
+    get:
+      tags: [books]
+      operationId: getBook
+      summary: Get a book
+      description: Returns one book by id.
+      responses:
+        '200':
+          description: Book found
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Book'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [books]
+      operationId: updateBook
+      summary: Replace a book
+      description: Replaces all fields of a book; omitted optional fields become null.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BookInput'}
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Book'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    delete:
+      tags: [books]
+      operationId: deleteBook
+      summary: Delete a book
+      description: Deletes a book by id; a second delete returns 404.
+      responses:
+        '204':
+          description: Deleted (response has no body)   # FIX 2: no `content` on 204
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+components:
+  schemas:
+    Book:
+      type: object
+      additionalProperties: false
+      required: [id, title, author, year, isbn]
+      properties:
+        id: {type: integer, minimum: 1}
+        title: {type: string, minLength: 1, maxLength: 200}
+        author: {type: string, minLength: 1, maxLength: 200}
+        year: {type: integer, nullable: true, minimum: 1450, maximum: 2100}   # FIX 3: integer/null
+        isbn: {type: string, pattern: '^\d{13}$', nullable: true}
+    BookInput:
+      type: object
+      additionalProperties: false
+      required: [title, author]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200}
+        author: {type: string, minLength: 1, maxLength: 200}
+        year: {type: integer, nullable: true, minimum: 1450, maximum: 2100}
+        isbn: {type: string, pattern: '^\d{13}$', nullable: true}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: {type: string}
+              message: {type: string}
+  responses:
+    NotFound:
+      description: Missing book
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: Duplicate ISBN
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
